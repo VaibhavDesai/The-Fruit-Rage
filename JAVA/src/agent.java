@@ -2,7 +2,7 @@
 import java.io.*;
 import java.util.*;
 
-public class homework {
+public class Submission {
 
     static int number_of_nodes_expanded;
 
@@ -32,6 +32,7 @@ public class homework {
 
                 if (visited_board[i][j] == 1 || board[i][j] == '*') {
                     continue;
+
                 } else {
 
                     visited_board[i][j] = 1;
@@ -100,6 +101,44 @@ public class homework {
         return fruit_list;
     }
 
+    public static void gravity1(char[][] board, int board_size, List<List<Integer>> coordinates) {
+
+
+        for (int i = 0; i < coordinates.size(); i++) {
+            int row = coordinates.get(i).get(0);
+            int col = coordinates.get(i).get(1);
+
+            board[row][col] = '+';
+
+        }
+
+
+        for (int col = 0; col < board_size; col++) {
+
+            List<Character> rowArray = new ArrayList<>();
+
+            for (int row = 0; row < board_size; row++) {
+
+                if (board[row][col] != '*' && board[row][col] != '+') {
+                    rowArray.add(board[row][col]);
+                }
+            }
+
+            int i = 0;
+            for (int row = board_size-1; row > -1; row--) {
+
+                if (i < rowArray.size()) {
+                    board[row][col] = rowArray.get(rowArray.size() - i - 1);
+                    i++;
+                } else {
+                    board[row][col] = '*';
+                }
+
+            }
+        }
+
+    }
+
     public static void gravity(char[][] board, int board_size, List<List<Integer>> coordinates) {
 
         for (int i = 0; i < coordinates.size(); i++) {
@@ -131,11 +170,24 @@ public class homework {
             new_mat[i] = matrix[i].clone();
         }
         return new_mat;
+
+        //return java.util.Arrays.stream(matrix).map(el -> el.clone()).toArray($ -> matrix.clone());
+    }
+
+    public static List<List<Integer>> deepCopyFinalMove(List<List<Integer>> final_move){
+
+        List<List<Integer>> temp = new ArrayList<>();
+        for(int i=0; i<final_move.size();i++){
+            List<Integer> pair = new ArrayList<>();
+            pair.add(final_move.get(i).get(0));
+            pair.add(final_move.get(i).get(1));
+
+            temp.add(pair);
+        }
+        return temp;
     }
 
     public static String printPosition(List<List<Integer>> final_moves){
-
-
         char col = (char) ('A'+final_moves.get(0).get(1));
         return String.valueOf(col) + String.valueOf(final_moves.get(0).get(0)+1);
     }
@@ -143,7 +195,6 @@ public class homework {
     public static int alphaBeta(char[][] board, int board_size, TreeMap<Integer, List<List<List<Integer>>>> possible_moves, int my_score, int opp_score, int depth, int alpha, int beta, boolean maximizingPlayer, boolean isFirstMove, List<List<Integer>> final_move) {
 
         number_of_nodes_expanded += 1;
-
         if (depth == 0 || possible_moves.isEmpty()) {
             return my_score-opp_score;
 
@@ -173,6 +224,7 @@ public class homework {
                         }
 
                         if (beta <= alpha){
+
                             return alpha;
                         }
                     }
@@ -216,20 +268,26 @@ public class homework {
     public static int calculateDepth(int branching_factor, float time_remaining) throws FileNotFoundException {
 
         int depth;
-        String[] calibrate_data = ReadFileToStringArray("calibration.txt");
+        String[] calibrate_data = ReadFileToStringArray("calibrate.txt");
 
         int nodes_expanded_per_second = Integer.parseInt(calibrate_data[0]);
         int time_for_this_move =0;
-        if ((branching_factor/2) < 1){
+        if (branching_factor == 1){
             return 1;
         }
         else{
             time_for_this_move = (int) (time_remaining/(branching_factor/2));
         }
 
-        for(depth=1;depth<branching_factor;depth++){
+        System.out.println("bf"+branching_factor);
+        System.out.println(time_for_this_move);
+        depth = 1;
+        while(true){
+
             if (time_for_this_move*nodes_expanded_per_second < Math.pow(branching_factor,depth))
                 break;
+
+            depth++;
         }
 
         return depth;
@@ -239,18 +297,17 @@ public class homework {
 
         List<List<Integer>> final_move = new ArrayList<>();
         TreeMap<Integer, List<List<List<Integer>>>> possible_moves = possibleMoves(board, board_size);
-        alphaBeta(board,board_size, possible_moves,0,0, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, true, true, final_move);
-        
+        System.out.println(possible_moves.get(1).size());
+        int final_ans = alphaBeta(board,board_size, possible_moves,0,0, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, true, true, final_move);
+
         return number_of_nodes_expanded;
     }
 
     public static void main(String args[]) throws IOException {
 
         String[] file_input = ReadFileToStringArray("input.txt");
-
         int board_size = Integer.parseInt(file_input[0]);
         int no_of_fruit = Integer.parseInt(file_input[1]);
-
         float time_remaining = Float.parseFloat(file_input[2]);
 
         char[][] board = new char[board_size][board_size];
@@ -265,7 +322,6 @@ public class homework {
 
 
         TreeMap<Integer, List<List<List<Integer>>>> possible_moves = possibleMoves(board, board_size);
-
         int branching_factor = 0;
         Iterator entries = possible_moves.entrySet().iterator();
 
@@ -278,20 +334,58 @@ public class homework {
         int depth = calculateDepth(branching_factor, time_remaining);
 
         System.out.println("depth:"+depth);
-        int selected_depth = Math.max(3,depth);
-        System.out.println("selected_depth:"+selected_depth);
-        alphaBeta(board,board_size, possible_moves,0,0, selected_depth, Integer.MIN_VALUE, Integer.MAX_VALUE, true, true, final_move);
+        int final_ans = alphaBeta(board,board_size, possible_moves,0,0, 3, Integer.MIN_VALUE, Integer.MAX_VALUE, true, true, final_move);
         long end_time = System.currentTimeMillis();
 
         gravity(board,board_size,final_move);
-
         FileWriter fw = new FileWriter("output.txt");
         BufferedWriter bw = new BufferedWriter(fw);
         bw.write((printPosition(final_move)+"\n"+printBoard(board,board_size)));
         bw.close();
         fw.close();
         System.out.println((end_time-start_time)+"");
+        //System.out.println(final_move);
+        //System.out.println(final_ans);
+
+        //printBoard(board,board_size);*/
 
     }
 
+    public static void gravity2(char[][] board, int board_size, List<List<Integer>> coordinates) {
+
+
+        for (int i = 0; i < coordinates.size(); i++) {
+            int row = coordinates.get(i).get(0);
+            int col = coordinates.get(i).get(1);
+
+            board[row][col] = '+';
+
+        }
+
+
+        for (int col = 0; col < board_size; col++) {
+
+            List<Character> rowArray = new ArrayList<>();
+
+            for (int row = 0; row < board_size; row++) {
+
+                if (board[row][col] != '*' && board[row][col] != '+') {
+                    rowArray.add(board[row][col]);
+                }
+            }
+
+            int i = 0;
+            for (int row = board_size-1; row > -1; row--) {
+
+                if (i < rowArray.size()) {
+                    board[row][col] = rowArray.get(rowArray.size() - i - 1);
+                    i++;
+                } else {
+                    board[row][col] = '*';
+                }
+
+            }
+        }
+
+    }
 }
